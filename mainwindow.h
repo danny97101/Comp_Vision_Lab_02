@@ -21,6 +21,7 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     void smooth(Mat& matIn, Mat& dest);
     void sobel(Mat& matIn, Mat& dest);
+    void sharpen(Mat& matIn, Mat& dest);
     ~MainWindow();
 
 private slots:

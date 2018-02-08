@@ -49,13 +49,13 @@ void MainWindow::sobel(Mat &matIn, Mat &dest) {
     MainWindow::smooth(matIn, smooth);
     QImage smoothed=QImage((const unsigned char*)(smooth.data),smooth.cols,smooth.rows,
                       smooth.step,QImage::Format_RGB888);
-    ui->imageOut->setPixmap(QPixmap(QPixmap::fromImage(smoothed)));
+    //ui->imageOut->setPixmap(QPixmap(QPixmap::fromImage(smoothed)));
 
     Mat grey;
     cvtColor(smooth, grey, CV_RGB2GRAY);
     QImage gray=QImage((const unsigned char*)(grey.data),grey.cols,grey.rows,
                       grey.step,QImage::Format_Grayscale8);
-    ui->imageOut_4->setPixmap(QPixmap(QPixmap::fromImage(gray)));
+    //ui->imageOut_4->setPixmap(QPixmap(QPixmap::fromImage(gray)));
 
     for (int row = 1; row < matIn.rows - 1; row++) {
         for (int col = 1; col < matIn.cols - 1; col++) {
@@ -83,6 +83,33 @@ void MainWindow::sobel(Mat &matIn, Mat &dest) {
     }
 }
 
+void MainWindow::sharpen(Mat &matIn, Mat &dest) {
+    for (int row = 1; row < matIn.rows - 1; row++) {
+        for (int col = 1; col < matIn.cols - 1; col++) {
+            /*Vec3b topLeft = matIn.at<Vec3b>(row-1, col-1);
+            Vec3b topMid = matIn.at<Vec3b>(row-1, col);
+            Vec3b topRight = matIn.at<Vec3b>(row-1, col+1);
+            Vec3b midLeft = matIn.at<Vec3b>(row, col-1);
+            Vec3b mid = matIn.at<Vec3b>(row,col);
+            Vec3b midRight = matIn.at<Vec3b>(row, col+1);
+            Vec3b botLeft = matIn.at<Vec3b>(row+1,col-1);
+            Vec3b botMid = matIn.at<Vec3b>(row+1,col);
+            Vec3b botRight = matIn.at<Vec3b>(row+1, col+1);
+            for (int color = 0; color < 3; color++)
+                dest.at<Vec3b>(row,col)[color] = (-1*topLeft[color] - topMid[color] - topRight[color] -
+                                                    midLeft[color] + 8*mid[color] - midRight[color] -
+                                                    botLeft[color] - botMid[color] - botRight[color]) / 16;
+*/          Vec3b mid = matIn.at<Vec3b>(row,col);
+            for (int color = 0; color < 3; color++) {
+                if (mid[color] > 127)
+                    dest.at<Vec3b>(row,col)[color] = mid[color] + (255-mid[color])/10;
+                else
+                    dest.at<Vec3b>(row,col)[color] = .9 * mid[color];
+            }
+        }
+    }
+}
+
 void MainWindow::displayFrame(){
     //for (int i=0;i<5;i++)
         cam>>frameIn;
@@ -103,16 +130,23 @@ void MainWindow::displayFrame(){
         }
     }
 */
-    Mat sobel = Mat(frame.rows,frame.cols,frame.type());
-    MainWindow::sobel(frame, sobel);
 
     QImage orig = QImage((const unsigned char*)(frame.data),frame.cols,frame.rows,
                          frame.step,QImage::Format_RGB888);
 
-    QImage sobeled=QImage((const unsigned char*)(sobel.data),sobel.cols,sobel.rows,
-                      sobel.step,QImage::Format_RGB888);
-    ui->imageOut_2->setPixmap(QPixmap(QPixmap::fromImage(orig)));
-    //ui->imageOut_2->resize(ui->imageOut_2->pixmap()->size());
-    //ui->imageOut->resize(ui->imageOut->pixmap()->size());
-    ui->imageOut_3->setPixmap(QPixmap(QPixmap::fromImage(sobeled)));
+    ui->imageOut->setPixmap(QPixmap(QPixmap::fromImage(orig)));
+
+    Mat smoothed = Mat(frame.rows,frame.cols,frame.type());
+    MainWindow::smooth(frame, smoothed);
+    QImage smoothPic = QImage((const unsigned char*)(smoothed.data),smoothed.cols,smoothed.rows,
+                         smoothed.step,QImage::Format_RGB888);
+
+    ui->imageOut_2->setPixmap(QPixmap(QPixmap::fromImage(smoothPic)));
+
+    Mat sharpened = Mat(frame.rows,frame.cols,frame.type());
+    MainWindow::sharpen(smoothed, sharpened);
+    QImage sharpenedPic = QImage((const unsigned char*)(sharpened.data),sharpened.cols,sharpened.rows,
+                         sharpened.step,QImage::Format_RGB888);
+    ui->imageOut_3->setPixmap(QPixmap(QPixmap::fromImage(sharpenedPic)));
+
 }
