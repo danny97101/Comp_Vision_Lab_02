@@ -83,7 +83,7 @@ void MainWindow::sobel(Mat &matIn, Mat &dest) {
     }
 }
 
-void MainWindow::sharpen(Mat &matIn, Mat &dest) {
+void MainWindow::sharpenAttempt(Mat &matIn, Mat &dest) {
     for (int row = 1; row < matIn.rows - 1; row++) {
         for (int col = 1; col < matIn.cols - 1; col++) {
             /*Vec3b topLeft = matIn.at<Vec3b>(row-1, col-1);
@@ -100,14 +100,60 @@ void MainWindow::sharpen(Mat &matIn, Mat &dest) {
                                                     midLeft[color] + 8*mid[color] - midRight[color] -
                                                     botLeft[color] - botMid[color] - botRight[color]) / 16;
 */          Vec3b mid = matIn.at<Vec3b>(row,col);
+            /*
             for (int color = 0; color < 3; color++) {
                 if (mid[color] > 127)
                     dest.at<Vec3b>(row,col)[color] = mid[color] + (255-mid[color])/10;
                 else
                     dest.at<Vec3b>(row,col)[color] = .9 * mid[color];
+
+            }*/
+
+            if (abs(mid[0] - mid[1]) < 15 && abs(mid[0] - mid[2]) < 15) {
+                dest.at<Vec3b>(row,col)[0] = mid[0];
+                dest.at<Vec3b>(row,col)[1] = mid[1];
+                dest.at<Vec3b>(row,col)[2] = mid[2];
+            } else {
+
+            if (mid[0] >= mid[1] && mid[0] >= mid[2]) {
+                dest.at<Vec3b>(row,col)[0] = mid[0] + (255-mid[0])/4;
+                dest.at<Vec3b>(row,col)[1] = mid[1];
+                dest.at<Vec3b>(row,col)[2] = mid[2];
+            } else if (mid[1] >= mid[0] && mid[1] >= mid[2]) {
+                dest.at<Vec3b>(row,col)[1] = mid[1] + (255-mid[1])/4;
+                dest.at<Vec3b>(row,col)[0] = mid[0];
+                dest.at<Vec3b>(row,col)[2] = mid[2];
+            } else {
+                dest.at<Vec3b>(row,col)[2] = mid[2] + (255-mid[2])/4;
+                dest.at<Vec3b>(row,col)[1] = mid[1];
+                dest.at<Vec3b>(row,col)[0] = mid[0];
+            }
             }
         }
     }
+}
+
+void MainWindow::sharpen(Mat &matIn, Mat &dest) {
+    // kinda sucks, but found here: http://www.foundalis.com/res/imgproc.htm
+    // i like my solution more.
+
+    for (int row = 1; row < matIn.rows - 1; row++) {
+        for (int col = 1; col < matIn.cols - 1; col++) {
+            Vec3b topLeft = matIn.at<Vec3b>(row-1, col-1);
+            Vec3b topMid = matIn.at<Vec3b>(row-1, col);
+            Vec3b topRight = matIn.at<Vec3b>(row-1, col+1);
+            Vec3b midLeft = matIn.at<Vec3b>(row, col-1);
+            Vec3b mid = matIn.at<Vec3b>(row,col);
+            Vec3b midRight = matIn.at<Vec3b>(row, col+1);
+            Vec3b botLeft = matIn.at<Vec3b>(row+1,col-1);
+            Vec3b botMid = matIn.at<Vec3b>(row+1,col);
+            Vec3b botRight = matIn.at<Vec3b>(row+1, col+1);
+            for (int color = 0; color < 3; color++) {
+                dest.at<Vec3b>(row,col)[color] = (-1*topLeft[color] - topMid[color] - topRight[color] -
+                                                    midLeft[color] + 9*mid[color] - midRight[color] -
+                                                    botLeft[color] - botMid[color] - botRight[color]);
+            }
+}}
 }
 
 void MainWindow::displayFrame(){
@@ -144,9 +190,14 @@ void MainWindow::displayFrame(){
     ui->imageOut_2->setPixmap(QPixmap(QPixmap::fromImage(smoothPic)));
 
     Mat sharpened = Mat(frame.rows,frame.cols,frame.type());
-    MainWindow::sharpen(smoothed, sharpened);
+    MainWindow::sharpenAttempt(smoothed, sharpened);
     QImage sharpenedPic = QImage((const unsigned char*)(sharpened.data),sharpened.cols,sharpened.rows,
                          sharpened.step,QImage::Format_RGB888);
-    ui->imageOut_3->setPixmap(QPixmap(QPixmap::fromImage(sharpenedPic)));
+    ui->imageOut_4->setPixmap(QPixmap(QPixmap::fromImage(sharpenedPic)));
 
+    Mat sharpened2 = Mat(frame.rows,frame.cols,frame.type());
+    MainWindow::sharpen(smoothed, sharpened2);
+    QImage sharpenedPic2 = QImage((const unsigned char*)(sharpened2.data),sharpened2.cols,sharpened2.rows,
+                         sharpened2.step,QImage::Format_RGB888);
+    ui->imageOut_3->setPixmap(QPixmap(QPixmap::fromImage(sharpenedPic2)));
 }
